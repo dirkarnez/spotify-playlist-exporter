@@ -25,21 +25,36 @@
         const App = () => {
             const [playlistJSON, setPlaylistJSON] = createSignal("");
             
-            function generate() {
-            	const playList = playlistJSON();
-                if (!!playList) {
-            		return `${JSON.parse(playList).tracks.items.map(item => `${item.track.external_urls.spotify}`)}`;
-                } else {
-                	return "";
+            function exportPlayList() {
+            	const playListValue = playlistJSON();
+                if (!playListValue) {
+                    return {};
+                }
+
+                try {
+                    const playList = JSON.parse(playListValue);
+                    return playList.tracks.items.map(item => {
+                        return {
+                            name: item.track.name,
+                            artists: item.track.artists.map(artist => artist.name),
+                            url: item.track.external_urls.spotify
+                        };
+                    });
+                } catch (err) {
+                    return {};
                 }
             }
 
             return html`
                 <div class="container mt-3">
                     <form>
-                    <textarea value="${playlistJSON}" oninput="${e => { setPlaylistJSON(e.target.value) }}"></textarea>
-                    <textarea value="${generate}"></textarea>
+                        <textarea value="${playlistJSON}" oninput="${e => { setPlaylistJSON(e.target.value) }}"></textarea>
+                        <textarea value="${() => JSON.stringify(exportPlayList(), null, 4)}"></textarea>
                     </form>
+                    ${() => {
+                        const a = exportPlayList();
+                        return Array.isArray(a) ? a.map(song => html`<a href="${song.url}">${song.artists.join(", ")} - ${song.name}</a><br><br>`) : "";
+                    }}
                 </div>
             `;
         };
